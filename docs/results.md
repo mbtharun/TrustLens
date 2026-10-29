@@ -27,3 +27,20 @@
 - Overall: acc 0.500, AUC 0.475 (n=140: 82 real, 58 AI)
 - Per generator (vs real), AUC: flux 0.60 (n=9), sdxl 0.31 (n=12), nano 0.65 (n=12), seedream 0.56 (n=12), imagegbt 0.30 (n=13)
 - Baseline does not transfer. Two generators are inverted. Per-generator n is too small for firm conclusions.
+
+
+## CLIP ViT-L/14 linear probe (frozen features, logistic regression)
+- Trained on: 1,000 REAL + 1,000 FAKE sampled from CIFAKE train (224x224, bicubic upscale)
+- In-distribution (CIFAKE test, n=1000): acc 0.922, AUC 0.975
+- Unseen generators (benchmark test, n=140): acc 0.679, AUC 0.793
+  - flux 0.80 (n=9), sdxl 0.73 (n=12), nano 0.79 (n=12), seedream 0.88 (n=12), imagegbt 0.76 (n=13)
+
+## Controls on the benchmark
+- Baseline resized to 224x224: AUC 0.372 (still inverted; resize is not the main cause)
+- CLIP on Gaussian-blurred images (sigma 2): AUC 0.820 (blur does not explain the result)
+
+## Limitations
+- CLIP trained on only 2,000 CIFAKE images, not the full 99k. Results may improve with more data.
+- Benchmark is small (140 images, 9-13 per generator). Per-generator numbers are rough.
+- Real images differ in source between CIFAKE (CIFAR-10) and the benchmark (mixed).
+- Only one benchmark. Generalization is not yet tested on a larger or independent set.
