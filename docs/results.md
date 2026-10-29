@@ -21,3 +21,9 @@
   - q75 -> q75 (retrained): 0.896
   - original -> q75 (no retrain): 0.896
   - Signal survives uniform compression at q75. Not yet tested at harsher levels (e.g., q30) or with resizing.
+
+  ## Cross-generator test: baseline trained on CIFAKE, tested on benchmark (ash12321, test split)
+- Images resized to 32x32 (confound: resizing changes frequency content)
+- Overall: acc 0.500, AUC 0.475 (n=140: 82 real, 58 AI)
+- Per generator (vs real), AUC: flux 0.60 (n=9), sdxl 0.31 (n=12), nano 0.65 (n=12), seedream 0.56 (n=12), imagegbt 0.30 (n=13)
+- Baseline does not transfer. Two generators are inverted. Per-generator n is too small for firm conclusions.
