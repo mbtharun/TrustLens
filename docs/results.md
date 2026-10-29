@@ -44,3 +44,53 @@
 - Benchmark is small (140 images, 9-13 per generator). Per-generator numbers are rough.
 - Real images differ in source between CIFAKE (CIFAR-10) and the benchmark (mixed).
 - Only one benchmark. Generalization is not yet tested on a larger or independent set.
+
+# TrustLens: Interview Notes
+
+## 30-second pitch
+TrustLens is an AI-generated image detector. I started with a simple hand-built feature model, which scored well on its own dataset but failed on unseen generators. I then tested a frozen pretrained CLIP model on the same unseen generators and it generalized much better (AUC 0.79 vs. 0.37 to 0.47). The main thing I focused on was honest evaluation: finding leakage, checking for shortcuts, and testing on generators the model never saw.
+
+## Architecture
+- **Data:** CIFAKE (REAL from CIFAR-10, FAKE from Stable Diffusion v1.4, 32x32). Cleaned splits, with the excluded files saved to a list so they're reproducible.
+- **Baseline:** 11 hand-made features (color mean/std, neighbor-pixel texture differences, FFT low/high frequency energy) into a standardized logistic regression.
+- **CLIP probe:** frozen CLIP ViT-L/14 image encoder, images at 224x224, embeddings cached, logistic regression on top (the UnivFD approach).
+- **Evaluation:** in-distribution test set plus a separate benchmark (140 images, 82 real and 58 AI, from 5 newer generators: FLUX, SDXL, Nano Banana Pro, SeeDream 4.5, ImageGPT).
+
+## Data and leakage
+- Training: 99,080 images (50,000 REAL, 49,080 FAKE). Test: 19,622 (10,000 REAL, 9,622 FAKE).
+- Found 378 FAKE test images that were byte-identical to training images, and 920 duplicates within training. Removed both (MD5 hashes) and verified 0 overlap afterward.
+- Before the fix, the accuracy numbers would have been inflated.
+
+## Results
+| Model | Test set | Acc | AUC |
+|---|---|---|---|
+| Baseline (11 features) | CIFAKE test, 32x32 | 0.824 | 0.895 |
+| Baseline (11 features) | Benchmark, 32x32 | 0.500 | 0.475 |
+| Baseline (11 features) | Benchmark, 224x224 | n/a | 0.372 |
+| CLIP probe | CIFAKE test (n=1000) | 0.922 | 0.975 |
+| CLIP probe | Benchmark, unseen generators | 0.679 | 0.793 |
+| CLIP probe | Benchmark, blurred (sigma 2) | n/a | 0.820 |
+
+Per generator, CLIP AUC: FLUX 0.80, SDXL 0.73, Nano Banana 0.79, SeeDream 0.88, ImageGPT 0.76.
+
+## Challenges and how I handled them
+1. **Data leakage.** Duplicate and overlapping images inflated the test score. Fixed by hashing every file and removing overlaps.
+2. **Could the model be using a shortcut?**
+   - Shuffled labels: mean AUC 0.51 across 20 seeds, so no label leakage.
+   - Re-encoding all images as JPEG at quality 75: AUC unchanged (0.895 to 0.896), so the signal isn't a file-format artifact.
+3. **The baseline doesn't generalize.** On unseen generators it's at chance (0.47 at 32x32), and two generators score below 0.5, meaning inverted. Checked at 224x224 too: 0.37, so resolution isn't the main cause.
+4. **Does CLIP just detect blur?** CLIP's AUC on blurred benchmark images was 0.82, not lower, so blur doesn't explain it.
+
+## Likely questions and answers
+- **Why FFT?** It measures energy at different spatial frequencies. Generators often leave spectral patterns that differ from camera photos. It was the strongest single baseline feature (AUC 0.79 alone). I can't claim it's a universal fingerprint, since it may also reflect CIFAR-10 versus Stable Diffusion processing.
+- **Why CLIP and not a CNN?** CLIP was pretrained on a huge, varied set of images, so its features capture more than one generator's artifacts. Freezing it avoids overfitting to CIFAKE. A fine-tuned CNN is the next comparison.
+- **How did you prevent leakage?** Hashed every file, found 378 test-train overlaps and 920 train duplicates, removed them, and confirmed zero overlap afterward.
+- **How do you know it isn't JPEG compression?** Re-encoded all images at a fixed quality. The AUC didn't change.
+- **Your accuracy?** In-distribution, 92% on CIFAKE test (CLIP probe). On unseen generators, 68% accuracy and 0.79 AUC. I report the unseen-generator number as the real one.
+- **What's the weakness?** The benchmark is small (140 images, 9 to 13 per generator), and the CLIP probe was trained on 2,000 CIFAKE images, not the full 99,000. Per-generator numbers are rough, and I haven't tested on an independent benchmark yet.
+- **What would you do next?** Train on the full CIFAKE set (on GPU), compare with a fine-tuned CNN on the same benchmark, test on a larger multi-generator set, and add robustness tests at harsher compression.
+
+## What not to claim
+- Don't say the model "works" in general. Say it generalized better on one small benchmark.
+- Don't lead with 92% or 0.975. Those are in-distribution. Lead with the unseen-generator result.
+- Don't say CLIP was trained on the full dataset. It was trained on 2,000 images.
