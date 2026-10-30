@@ -10,8 +10,6 @@ MODEL = "openai/clip-vit-large-patch14"
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_BYTES = 10 * 1024 * 1024
 
-THRESHOLD = json.load(open("backend/models/threshold.json"))["threshold"]
-
 device = "cuda" if torch.cuda.is_available() else "cpu"
 clip = CLIPModel.from_pretrained(MODEL).to(device).eval()
 processor = CLIPProcessor.from_pretrained(MODEL)
@@ -44,9 +42,11 @@ async def analyze(file: UploadFile = File(...)):
 
     prob_ai = float(probe.predict_proba(feats)[0, 1])
     return {
-        "prediction": "likely_ai" if prob_ai >= THRESHOLD else "likely_real",
         "probability_ai": round(prob_ai, 4),
-        "threshold": round(THRESHOLD, 4),
         "model": "CLIP ViT-L/14 linear probe",
-        "note": "Probabilistic estimate, not proof. Threshold chosen on CIFAKE data only; see docs for benchmark results.",
+        "note": (
+            "Ranking score, not a verdict. On unseen generators the probe ranks AI "
+            "images above real ones (AUC 0.79), but it flags about 45% of real photos "
+            "at any threshold we tested. Do not use it to decide whether a photo is real."
+        ),
     }

@@ -10,3 +10,5 @@ The model ranks AI images well on unseen generators, but at the default threshol
 
 - Don't quote 68% accuracy alone. It averages a strong class and a weak one.
 - Don't say the model is accurate on real photos. It passes only about half of them.
+
+Not as a verdict. I tested a threshold chosen on training data and it did not transfer: real-photo false positives stayed near 45%. So I shipped it as a ranking score, and I'd need a larger benchmark and a better real-photo training distribution before any verdict.

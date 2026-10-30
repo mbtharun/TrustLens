@@ -2,6 +2,8 @@
 
 TrustLens detects whether an image is AI-generated or a real photo.
 
+TrustLens scores how likely an image is to be AI-generated. On generators it never saw during training, the probe ranks AI images above real photos (ROC-AUC 0.79, versus 0.47 for a hand-built feature baseline). It is not a reliable real-or-fake verdict: at any threshold tested, it flags roughly 45% of real photos as AI, so the output is a ranking signal, not a decision.
+
 A frozen CLIP ViT-L/14 with a linear classifier ranks AI images well on generators it never saw during training (**0.79 ROC-AUC**), but at the default 0.5 threshold it flags about half of real photos as AI. A simple hand-built feature baseline scores 0.47 on the same test, which is chance.
 
 
@@ -17,6 +19,10 @@ A frozen CLIP ViT-L/14 with a linear classifier ranks AI images well on generato
 | CLIP ViT-L/14 linear probe, blurred | 224x224 | n/a | 0.82 |
 
 Per generator, CLIP AUC (vs. real): FLUX 0.80, SDXL 0.73, Nano Banana 0.79, SeeDream 0.88, ImageGPT 0.76.
+
+## Threshold experiment
+
+I picked a threshold on CIFAKE out-of-fold predictions, targeting 5% of real photos flagged. It was 0.807. On the benchmark it caught 83% of AI images and flagged 43% of real photos. The default 0.5 flagged 46%. The CIFAKE-chosen threshold did not transfer. The problem is the score distribution for real photos, not the cutoff.
 
 **Per-class results at threshold 0.5** (CLIP probe, unseen generators):
 
@@ -137,6 +143,7 @@ data/      datasets and cached embeddings (not tracked by git)
 - [x] Clean splits with leakage removed
 - [x] Hand-built feature baseline
 - [x] CLIP linear probe on unseen generators
+- [x] Threshold selected on CIFAKE and evaluated once on the benchmark (does not transfer)
 - [x] FastAPI endpoint (matches offline evaluation)
 - [ ] Probe trained on the full CIFAKE training set
 - [ ] FastAPI inference endpoint
