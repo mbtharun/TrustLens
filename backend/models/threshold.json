@@ -1,0 +1,5 @@
+{
+  "threshold": 0.8071714184572192,
+  "target_fpr": 0.05,
+  "source": "5-fold out-of-fold on CIFAKE train subset (2000 images)"
+}

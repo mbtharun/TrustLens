@@ -94,3 +94,10 @@ Per generator, CLIP AUC: FLUX 0.80, SDXL 0.73, Nano Banana 0.79, SeeDream 0.88, 
 - Don't say the model "works" in general. Say it generalized better on one small benchmark.
 - Don't lead with 92% or 0.975. Those are in-distribution. Lead with the unseen-generator result.
 - Don't say CLIP was trained on the full dataset. It was trained on 2,000 images.
+
+
+## Threshold selection (chosen on CIFAKE out-of-fold, target 5% of real flagged)
+- Chosen threshold: 0.807 (5-fold OOF on 2,000 CIFAKE train images)
+- Benchmark, threshold 0.807: AI caught 48/58 (0.83); real flagged AI 35/82 (0.43)
+- Benchmark, threshold 0.5:   AI caught 51/58 (0.88); real flagged AI 38/82 (0.46)
+- Conclusion: the CIFAKE-chosen threshold does not transfer. Real-photo false positives remain near 45% under both cutoffs, so the problem is the score distribution for real photos, not the cutoff.
