@@ -2,7 +2,8 @@
 
 TrustLens detects whether an image is AI-generated or a real photo.
 
-A frozen CLIP ViT-L/14 with a linear classifier reaches **0.79 ROC-AUC on generators it never saw during training**. A simple hand-built feature baseline scores 0.47 on the same test, which is chance. The work focuses on evaluating honestly: finding data leakage, checking for shortcuts, and testing on unseen generators.
+A frozen CLIP ViT-L/14 with a linear classifier ranks AI images well on generators it never saw during training (**0.79 ROC-AUC**), but at the default 0.5 threshold it flags about half of real photos as AI. A simple hand-built feature baseline scores 0.47 on the same test, which is chance.
+
 
 ## Results
 
@@ -16,6 +17,15 @@ A frozen CLIP ViT-L/14 with a linear classifier reaches **0.79 ROC-AUC on genera
 | CLIP ViT-L/14 linear probe, blurred | 224x224 | n/a | 0.82 |
 
 Per generator, CLIP AUC (vs. real): FLUX 0.80, SDXL 0.73, Nano Banana 0.79, SeeDream 0.88, ImageGPT 0.76.
+
+**Per-class results at threshold 0.5** (CLIP probe, unseen generators):
+
+| Class | Correct | Rate |
+|---|---|---|
+| AI images (n=58) | 51 | 88% |
+| Real photos (n=82) | 44 | 54% |
+
+The overall accuracy of 68% averages these two rates and hides the imbalance. Nearly half of real photos are flagged as AI.
 
 **In-distribution** (CIFAKE test set, same generator as training):
 
@@ -41,6 +51,7 @@ Data is not included in this repo. Download it as described below.
 
 ## Limitations
 
+- **False positives on real photos.** At threshold 0.5, 38 of 82 real photos are flagged as AI. Any product built on this model needs a different threshold, chosen on CIFAKE validation data rather than the benchmark.
 - **Small benchmark.** 140 images, with 9 to 13 AI images per generator. Per-generator numbers are rough, and a difference of about 0.05 between generators is within noise.
 - **Partial training set.** The CLIP probe was trained on 2,000 CIFAKE images (1,000 per class). A full-set run hit the memory limit on Colab, so it isn't reported.
 - **One training generator.** CIFAKE uses only Stable Diffusion v1.4, so generalization is tested on a single unseen benchmark, not a broad range of generators.
@@ -62,6 +73,18 @@ Put the data in `data/` (this folder is gitignored):
    ```bash
    python ml/download_benchmark.py
    ```
+
+
+## API
+
+Serve the probe with FastAPI:
+
+```bash
+python ml/save_probe.py          # saves backend/models/clip_probe.joblib
+uvicorn backend.main:app --reload
+```
+
+Open http://127.0.0.1:8000/docs and use `POST /analyze` to upload an image. The endpoint returns `probability_ai` and a label at threshold 0.5. Its scores match the offline evaluation on the same images.
 
 ## Reproducing the results
 
@@ -93,6 +116,9 @@ python ml/clip_probe.py
 
 # 8. Controls on the benchmark (baseline at 224x224, CLIP on blurred images)
 python ml/controls.py
+
+# 9. Check that the API's preprocessing matches the cached evaluation
+python ml/check_probe_on_cache.py
 ```
 
 CLIP embedding runs slowly on a CPU. Using a GPU (for example, Google Colab's free T4) is much faster.
@@ -111,6 +137,7 @@ data/      datasets and cached embeddings (not tracked by git)
 - [x] Clean splits with leakage removed
 - [x] Hand-built feature baseline
 - [x] CLIP linear probe on unseen generators
+- [x] FastAPI endpoint (matches offline evaluation)
 - [ ] Probe trained on the full CIFAKE training set
 - [ ] FastAPI inference endpoint
 - [ ] Web demo and deployment
