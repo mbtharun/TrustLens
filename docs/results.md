@@ -101,3 +101,12 @@ Per generator, CLIP AUC: FLUX 0.80, SDXL 0.73, Nano Banana 0.79, SeeDream 0.88, 
 - Benchmark, threshold 0.807: AI caught 48/58 (0.83); real flagged AI 35/82 (0.43)
 - Benchmark, threshold 0.5:   AI caught 51/58 (0.88); real flagged AI 38/82 (0.46)
 - Conclusion: the CIFAKE-chosen threshold does not transfer. Real-photo false positives remain near 45% under both cutoffs, so the problem is the score distribution for real photos, not the cutoff.
+
+
+## Independent real-photo check (700 images, Open Images validation)
+- Source: Open Images v7 validation, license CC BY 2.0 for all images
+- Near-duplicate filter: perceptual hash (Hamming <= 8) against the benchmark and 5,000 CIFAKE real images; 0 removed
+- Flagged as AI at 0.5:     287/700 = 0.410 (95% CI 0.374 to 0.447)
+- Flagged as AI at 0.807:   258/700 = 0.369 (95% CI 0.334 to 0.405)
+- Score quantiles (10/50/90): 0.00 / 0.09 / 1.00
+- Conclusion: real-photo false positives around 40% replicate on an independent set. The benchmark's real photos were not unusual.
