@@ -1,8 +1,8 @@
 import io
-import json
 import joblib
 import torch
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 
@@ -17,8 +17,9 @@ probe = joblib.load("backend/models/clip_probe.joblib")
 
 app = FastAPI(title="TrustLens")
 
-from fastapi.middleware.cors import CORSMiddleware
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+@app.get("/")
+def home():
+    return FileResponse("frontend/index.html")
 
 
 @app.get("/health")
